@@ -138,7 +138,9 @@ object ShoppingCart {
   }
 
   def apply(cartId: String, eventProcessorTags: Set[String]): Behavior[Command] = {
+    // tag::tagging[]
     EventSourcedBehavior
+      // end::tagging[]
       .withEnforcedReplies[Command, Event, State](
         PersistenceId(EntityKey.name, cartId),
         State.empty,
@@ -152,7 +154,9 @@ object ShoppingCart {
         // tag::evenHandler[]
         eventHandler = (state, event) => handleEvent(state, event))
         // end::evenHandler[]
+      // tag::tagging[]
       .withTagger(_ => eventProcessorTags)
+      // end::tagging[]
       .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 100, keepNSnapshots = 3))
       .onPersistFailure(SupervisorStrategy.restartWithBackoff(200.millis, 5.seconds, 0.1))
   }
