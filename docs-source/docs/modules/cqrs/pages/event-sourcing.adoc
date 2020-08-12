@@ -1,0 +1,81 @@
+= Event sourcing
+:toc:
+:toc-title: ON THIS PAGE
+:toclevels: 2
+
+include::ROOT:partial$include.adoc[]
+
+== Event sourcing concepts
+
+See an link:https://docs.microsoft.com/en-us/previous-versions/msp-n-p/jj591559(v=pandp.10)?redirectedfrom=MSDN[introduction to EventSourcing] at MSDN.
+
+Another excellent article about “thinking in Events” is link:https://hackernoon.com/events-as-first-class-citizens-8633e8479493[Events As First-Class Citizens] by Randy Shoup. It is a short and recommended read if you’re starting developing Events based applications.
+
+Event sourcing documentation in the link:{akka}/typed/persistence.html#introduction[Akka Reference documentation for Akka Persistence].
+
+== Describing entities
+
+An obvious difference to persistence based on Create-Read-Update-Delete (CRUD) data-stores is that we don't need to map our imagined entities to a database model up-front. Instead, we model the entities and the events that affect their state.
+
+Our shopping cart entity is implemented in `ShoppingCart`. Its state keeps track of items with their count and the optional checkout timestamp ('Instant').
+
+[source,scala]
+----
+include::example$shopping-cart-service-scala/src/main/scala/sample/shoppingcart/ShoppingCart.scala[tag=state]
+----
+
+
+== Updating entities
+
+This entity state can be changed only via commands to it. The commands are the "external" API of an entity. Commands request state changes, but they might lead to different events on the entity depending on the entities current state.
+
+[source,scala]
+----
+include::example$shopping-cart-service-scala/src/main/scala/sample/shoppingcart/ShoppingCart.scala[tag=commands]
+----
+
+Our example handles commands differently whether the shopping cart is checked out or not. This command handler implements the "external" API of our entity.
+
+[source,scala]
+----
+include::example$shopping-cart-service-scala/src/main/scala/sample/shoppingcart/ShoppingCart.scala[tag=commandHandler]
+----
+
+For an open shopping cart the `ReplyEffect` reacts on the commands by deciding which effect they should have on the entity.
+
+Our business logic allows only items to be added which are not in the cart yet and require a positive quantity. If an `AddItem` command is accepted, the `Effect.persist` applies an event to the cart's state and makes sure this event is stored before replying to the command.
+
+[source,scala]
+----
+include::example$shopping-cart-service-scala/src/main/scala/sample/shoppingcart/ShoppingCart.scala[tag=openShoppingCart]
+----
+
+The events are state-updating and only for use internal to the entity. Other parties can't send events.
+
+And it's the events that get continuously persisted to the Event Journal datastore, while the entity state is kept in memory. In case of a restart the latest state gets rebuilt by replaying the events from the Event Journal.
+
+[source,scala]
+----
+include::example$shopping-cart-service-scala/src/main/scala/sample/shoppingcart/ShoppingCart.scala[tag=events]
+----
+
+The state, commands and events of the entity are marked as `CborSerializable` which makes Akka use the built-in CBOR serialization whenever these need to be written to the datastore or sent between nodes within the Akka cluster.
+
+
+
+== TODO
+
+The write model is a shopping cart.
+
+The implementation is based on a sharded actor: each `ShoppingCart` is an link:{akka}/typed/cluster-sharding.html[Akka Cluster Sharding] entity. The entity actor `ShoppingCart` is an link:{akka}/typed/persistence.html[EventSourcedBehavior].
+
+Events from the shopping carts are tagged and consumed by the read model.
+
+
+== Full source
+
+[source,scala]
+----
+include::example$shopping-cart-service-scala/src/main/scala/sample/shoppingcart/ShoppingCart.scala[]
+----
+

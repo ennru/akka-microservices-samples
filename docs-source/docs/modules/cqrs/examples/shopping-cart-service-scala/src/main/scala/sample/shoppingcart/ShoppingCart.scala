@@ -36,7 +36,9 @@ object ShoppingCart {
   /**
    * The current state held by the persistent entity.
    */
+  // tag::state[]
   final case class State(items: Map[String, Int], checkoutDate: Option[Instant]) extends CborSerializable {
+  // end::state[]
 
     def isCheckedOut: Boolean =
       checkoutDate.isDefined
@@ -67,6 +69,7 @@ object ShoppingCart {
     val empty = State(items = Map.empty, checkoutDate = None)
   }
 
+  // tag::commands[]
   /**
    * This interface defines all the commands that the ShoppingCart persistent actor supports.
    */
@@ -105,7 +108,9 @@ object ShoppingCart {
    * Summary of the shopping cart state, used in reply messages.
    */
   final case class Summary(items: Map[String, Int], checkedOut: Boolean) extends CborSerializable
+  // end::commands[]
 
+  // tag::events[]
   /**
    * This interface defines all the events that the ShoppingCart supports.
    */
@@ -120,6 +125,7 @@ object ShoppingCart {
   final case class ItemQuantityAdjusted(cartId: String, itemId: String, newQuantity: Int) extends Event
 
   final case class CheckedOut(cartId: String, eventTime: Instant) extends Event
+  // end::events[]
 
   val EntityKey: EntityTypeKey[Command] = EntityTypeKey[Command]("ShoppingCart")
 
@@ -136,17 +142,20 @@ object ShoppingCart {
       .withEnforcedReplies[Command, Event, State](
         PersistenceId(EntityKey.name, cartId),
         State.empty,
-        (state, command) =>
+        // tag::commandHandler[]
+        commandHandler = (state, command) =>
           //The shopping cart behavior changes if it's checked out or not.
           // The commands are handled differently for each case.
           if (state.isCheckedOut) checkedOutShoppingCart(cartId, state, command)
           else openShoppingCart(cartId, state, command),
+        // end::commandHandler[]
         (state, event) => handleEvent(state, event))
       .withTagger(_ => eventProcessorTags)
       .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 100, keepNSnapshots = 3))
       .onPersistFailure(SupervisorStrategy.restartWithBackoff(200.millis, 5.seconds, 0.1))
   }
 
+  // tag::openShoppingCart[]
   private def openShoppingCart(cartId: String, state: State, command: Command): ReplyEffect[Event, State] =
     command match {
       case AddItem(itemId, quantity, replyTo) =>
@@ -158,6 +167,7 @@ object ShoppingCart {
           Effect
             .persist(ItemAdded(cartId, itemId, quantity))
             .thenReply(replyTo)(updatedCart => StatusReply.Success(updatedCart.toSummary))
+      // end::openShoppingCart[]
 
       case RemoveItem(itemId, replyTo) =>
         if (state.hasItem(itemId))

@@ -1,0 +1,18 @@
+= Command Query Responsibilty Segregation (CQRS)
+:toc:
+:toc-title: ON THIS PAGE
+:toclevels: 2
+
+include::ROOT:partial$include.adoc[]
+
+== Concepts
+
+CQRS documentation in the link:{akka}/typed/cqrs.html[Akka Reference documentation for Akka Persistence].
+
+== Write model
+
+The write model is a shopping cart.
+
+The implementation is based on a sharded actor: each `ShoppingCart` is an link:{akka}/typed/cluster-sharding.html[Akka Cluster Sharding] entity. The entity actor `ShoppingCart` is an link:https://doc.akka.io/docs/akka/2.6/typed/persistence.html[EventSourcedBehavior].
+
+Events from the shopping carts are tagged and consumed by the read model.
