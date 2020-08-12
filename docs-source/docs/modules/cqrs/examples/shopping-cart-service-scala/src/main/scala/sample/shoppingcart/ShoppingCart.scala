@@ -149,7 +149,9 @@ object ShoppingCart {
           if (state.isCheckedOut) checkedOutShoppingCart(cartId, state, command)
           else openShoppingCart(cartId, state, command),
         // end::commandHandler[]
-        (state, event) => handleEvent(state, event))
+        // tag::evenHandler[]
+        eventHandler = (state, event) => handleEvent(state, event))
+        // end::evenHandler[]
       .withTagger(_ => eventProcessorTags)
       .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 100, keepNSnapshots = 3))
       .onPersistFailure(SupervisorStrategy.restartWithBackoff(200.millis, 5.seconds, 0.1))
@@ -214,6 +216,8 @@ object ShoppingCart {
         Effect.reply(cmd.replyTo)(StatusReply.Error("Can't checkout already checked out shopping cart"))
     }
 
+  // tag::evenHandler[]
+
   private def handleEvent(state: State, event: Event) = {
     event match {
       case ItemAdded(_, itemId, quantity)            => state.updateItem(itemId, quantity)
@@ -222,4 +226,5 @@ object ShoppingCart {
       case CheckedOut(_, eventTime)                  => state.checkout(eventTime)
     }
   }
+  // end::evenHandler[]
 }

@@ -27,6 +27,10 @@ include::example$shopping-cart-service-scala/src/main/scala/sample/shoppingcart/
 
 == Updating entities
 
+To update an entity's state we use commands from the outside and events on the inside.
+
+=== Commands
+
 This entity state can be changed only via commands to it. The commands are the "external" API of an entity. Commands request state changes, but they might lead to different events on the entity depending on the entities current state.
 
 [source,scala]
@@ -50,6 +54,10 @@ Our business logic allows only items to be added which are not in the cart yet a
 include::example$shopping-cart-service-scala/src/main/scala/sample/shoppingcart/ShoppingCart.scala[tag=openShoppingCart]
 ----
 
+See all available effects in the link:{akka}/typed/persistence.html#effects-and-side-effects[Akka reference documentation].
+
+=== Events
+
 The events are state-updating and only for use internal to the entity. Other parties can't send events.
 
 And it's the events that get continuously persisted to the Event Journal datastore, while the entity state is kept in memory. In case of a restart the latest state gets rebuilt by replaying the events from the Event Journal.
@@ -58,6 +66,15 @@ And it's the events that get continuously persisted to the Event Journal datasto
 ----
 include::example$shopping-cart-service-scala/src/main/scala/sample/shoppingcart/ShoppingCart.scala[tag=events]
 ----
+
+Aligning with the command handler above, the entity's event handler reacts on events and updated the state. Notice that there are no decisions on events, they are applied without any checks.
+
+[source,scala]
+----
+include::example$shopping-cart-service-scala/src/main/scala/sample/shoppingcart/ShoppingCart.scala[tag=evenHandler]
+----
+
+
 
 The state, commands and events of the entity are marked as `CborSerializable` which makes Akka use the built-in CBOR serialization whenever these need to be written to the datastore or sent between nodes within the Akka cluster.
 
