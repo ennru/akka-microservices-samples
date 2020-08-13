@@ -38,6 +38,8 @@ This entity state can be changed only via commands to it. The commands are the "
 include::example$shopping-cart-service-scala/src/main/scala/sample/shoppingcart/ShoppingCart.scala[tag=commands]
 ----
 
+<1> All commands extend a common marker interface.
+
 Our example handles commands differently whether the shopping cart is checked out or not. This command handler implements the "external" API of our entity.
 
 [source,scala]
@@ -53,6 +55,9 @@ Our business logic allows only items to be added which are not in the cart yet a
 ----
 include::example$shopping-cart-service-scala/src/main/scala/sample/shoppingcart/ShoppingCart.scala[tag=openShoppingCart]
 ----
+
+<1> Matching the `AddItem` command
+<2> Persisting the `ItemAdded` event and replying to the sender
 
 See all available effects in the link:{akka}/typed/persistence.html#effects-and-side-effects[Akka reference documentation].
 

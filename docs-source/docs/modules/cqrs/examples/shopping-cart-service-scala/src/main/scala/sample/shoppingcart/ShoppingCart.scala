@@ -73,7 +73,7 @@ object ShoppingCart {
   /**
    * This interface defines all the commands that the ShoppingCart persistent actor supports.
    */
-  sealed trait Command extends CborSerializable
+  sealed trait Command extends CborSerializable // <1>
 
   /**
    * A command to add an item to the cart.
@@ -164,14 +164,14 @@ object ShoppingCart {
   // tag::openShoppingCart[]
   private def openShoppingCart(cartId: String, state: State, command: Command): ReplyEffect[Event, State] =
     command match {
-      case AddItem(itemId, quantity, replyTo) =>
+      case AddItem(itemId, quantity, replyTo) => // <1>
         if (state.hasItem(itemId))
           Effect.reply(replyTo)(StatusReply.Error(s"Item '$itemId' was already added to this shopping cart"))
         else if (quantity <= 0)
           Effect.reply(replyTo)(StatusReply.Error("Quantity must be greater than zero"))
         else
           Effect
-            .persist(ItemAdded(cartId, itemId, quantity))
+            .persist(ItemAdded(cartId, itemId, quantity)) // <2>
             .thenReply(replyTo)(updatedCart => StatusReply.Success(updatedCart.toSummary))
       // end::openShoppingCart[]
 
