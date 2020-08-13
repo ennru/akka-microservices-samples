@@ -15,7 +15,7 @@ Event sourcing documentation in the link:{akka}/typed/persistence.html#introduct
 
 == Describing entities
 
-An obvious difference to persistence based on Create-Read-Update-Delete (CRUD) data-stores is that we don't need to map our imagined entities to a database model up-front. Instead, we model the entities and the events that affect their state.
+A difference to persistence based on Create-Read-Update-Delete (CRUD) data-stores is that we don't need to map our imagined entities to a database model up-front. Instead, we model the entities and the events that affect their state.
 
 Our shopping cart entity is implemented in `ShoppingCart`. Its state keeps track of items with their count and the optional checkout timestamp ('Instant').
 
@@ -23,6 +23,8 @@ Our shopping cart entity is implemented in `ShoppingCart`. Its state keeps track
 ----
 include::example$shopping-cart-service-scala/src/main/scala/sample/shoppingcart/ShoppingCart.scala[tag=state]
 ----
+
+ifdef::todo:[include something like https://www.lagomframework.com/documentation/1.6.x/scala/ES_CQRS.html and https://www.lagomframework.com/documentation/1.6.x/scala/ESAdvantage.html]
 
 
 == Updating entities
@@ -63,16 +65,16 @@ See all available effects in the link:{akka}/typed/persistence.html#effects-and-
 
 === Events
 
-The events are state-updating and only for use internal to the entity. Other parties can't send events.
+The events represent changes of the entity's state and are the only way to change it. The entity creates events from commands, other parts of the application may listen to the created events. Other parties can't send events.
 
-And it's the events that get continuously persisted to the Event Journal datastore, while the entity state is kept in memory. In case of a restart the latest state gets rebuilt by replaying the events from the Event Journal.
+The events get continuously persisted to the Event Journal datastore, while the entity state is kept in memory. In case of a restart the latest state gets rebuilt by replaying the events from the Event Journal.
 
 [source,scala]
 ----
 include::example$shopping-cart-service-scala/src/main/scala/sample/shoppingcart/ShoppingCart.scala[tag=events]
 ----
 
-Aligning with the command handler above, the entity's event handler reacts on events and updated the state. Notice that there are no decisions on events, they are applied without any checks.
+Aligning with the command handler above, the entity's event handler reacts on events and updates the state. Notice that there are no decisions on events, they are applied without any checks.
 
 [source,scala]
 ----
@@ -81,7 +83,14 @@ include::example$shopping-cart-service-scala/src/main/scala/sample/shoppingcart/
 
 
 
-The state, commands and events of the entity are marked as `CborSerializable` which makes Akka use the built-in CBOR serialization whenever these need to be written to the datastore or sent between nodes within the Akka cluster.
+The state, commands and events of the entity are marked as `CborSerializable` which is configured to use the built-in CBOR serialization whenever these need to be written to the datastore or sent between nodes within the Akka cluster. The interface is configured in the `application.conf` file to enable CBOR serialization.
+
+[source,hocon]
+----
+include::example$shopping-cart-service-scala/src/main/resources/application.conf[tag=cbor]
+----
+
+
 
 
 
