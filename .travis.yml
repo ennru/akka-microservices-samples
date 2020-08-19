@@ -15,6 +15,7 @@ before_install:
 
 # default script for jobs, that do not have any specified
 script:
+  - cd "$DIR"
   - java -version
   - sbt -jvm-opts .jvmopts-travis "$CMD"
 
