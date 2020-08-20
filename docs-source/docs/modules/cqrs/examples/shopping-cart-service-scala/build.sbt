@@ -6,7 +6,7 @@ val AkkaProjectionVersion = "1.0.0-RC1"
 
 enablePlugins(AkkaGrpcPlugin)
 
-name := "shopping-cart-service"
+name := "shopping-cart-service-scala"
 version := "1.0"
 
 organization := "com.lightbend.akka.samples"
@@ -43,7 +43,7 @@ libraryDependencies ++= Seq(
     "com.typesafe.akka" %% "akka-persistence-testkit" % AkkaVersion % Test,
     "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
     "com.lightbend.akka" %% "akka-projection-testkit" % AkkaProjectionVersion % Test,
-    "org.scalatest" %% "scalatest" % "3.1.0" % Test)
+    "org.scalatest" %% "scalatest" % "3.1.3" % Test)
 //end::libraryDependencies[]
 
 run / fork := false
