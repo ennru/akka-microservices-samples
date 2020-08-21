@@ -41,15 +41,15 @@ object ShoppingCartEventConsumer {
 
     val streamCompletion = RestartSource
       .onFailuresWithBackoff(minBackoff = 1.second, maxBackoff = 30.seconds, randomFactor = 0.1) { () =>
-        val (control, source) = Consumer
+        Consumer
           .committableSource(consumerSettings, Subscriptions.topics(topic))
           .mapAsync(1) { msg =>
             handleRecord(msg.record).map(_ => msg.committableOffset)
           }
           .via(Committer.flow(committerSettings))
-          .preMaterialize()
-        controlReference.set(control)
-        source
+          .mapMaterializedValue { control =>
+            controlReference.set(control)
+          }
       }
       .run()
 
