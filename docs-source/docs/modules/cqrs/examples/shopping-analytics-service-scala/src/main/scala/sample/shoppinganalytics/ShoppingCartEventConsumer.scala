@@ -1,23 +1,24 @@
 package sample.shoppinganalytics
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.control.NonFatal
+import java.util.concurrent.atomic.AtomicReference
+
 import akka.Done
+import akka.actor.CoordinatedShutdown
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.adapter._
-import akka.kafka.CommitterSettings
-import akka.kafka.ConsumerSettings
-import akka.kafka.Subscriptions
+import akka.kafka.scaladsl.Consumer.Control
 import akka.kafka.scaladsl.{ Committer, Consumer, DiscoverySupport }
+import akka.kafka.{ CommitterSettings, ConsumerSettings, Subscriptions }
 import akka.stream.scaladsl.RestartSource
 import com.google.protobuf.any.{ Any => ScalaPBAny }
 import org.apache.kafka.clients.consumer.ConsumerRecord
-import org.apache.kafka.common.serialization.ByteArrayDeserializer
-import org.apache.kafka.common.serialization.StringDeserializer
+import org.apache.kafka.common.serialization.{ ByteArrayDeserializer, StringDeserializer }
 import org.slf4j.LoggerFactory
 import sample.shoppingcart.proto
+
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.duration._
+import scala.util.control.NonFatal
 
 object ShoppingCartEventConsumer {
 
@@ -33,18 +34,31 @@ object ShoppingCartEventConsumer {
       ConsumerSettings(config, new StringDeserializer, new ByteArrayDeserializer)
         .withEnrichAsync(DiscoverySupport.consumerBootstrapServers(config)(system.toClassic))
         .withGroupId("shopping-cart-analytics")
+        .withStopTimeout(0.seconds)
     val committerSettings = CommitterSettings(system)
 
-    RestartSource
+    val controlReference = new AtomicReference[Control]()
+
+    val streamCompletion = RestartSource
       .onFailuresWithBackoff(minBackoff = 1.second, maxBackoff = 30.seconds, randomFactor = 0.1) { () =>
-        Consumer
+        val (control, source) = Consumer
           .committableSource(consumerSettings, Subscriptions.topics(topic))
           .mapAsync(1) { msg =>
             handleRecord(msg.record).map(_ => msg.committableOffset)
           }
           .via(Committer.flow(committerSettings))
+          .preMaterialize()
+        controlReference.set(control)
+        source
       }
       .run()
+
+    CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseServiceUnbind, "event-consumer") { () =>
+      val control = controlReference.get()
+      if (control != null) {
+        control.drainAndShutdown(streamCompletion)
+      } else Future.successful(Done)
+    }
   }
 
   private def handleRecord(record: ConsumerRecord[String, Array[Byte]]): Future[Done] = {
