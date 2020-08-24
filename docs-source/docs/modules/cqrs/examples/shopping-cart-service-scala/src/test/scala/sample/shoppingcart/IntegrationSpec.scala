@@ -2,6 +2,8 @@ package sample.shoppingcart
 
 import java.util.UUID
 
+import akka.Done
+
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
@@ -42,18 +44,6 @@ object IntegrationSpec {
 
   val config: Config = ConfigFactory
     .parseString(s"""
-      akka.discovery.method = config
-      
-      akka.discovery.config.services = {
-        // The Kafka broker's bootstrap servers
-        "shopping-kafka-broker" = {
-          endpoints = [
-            { host = "localhost", port = 9092 }
-          ]
-        }
-      }
-
-      akka.remote.artery.canonical.port = 0
       akka.cluster {
          seed-nodes = []
          jmx.multi-mbeans-in-same-jvm = on
@@ -111,20 +101,17 @@ object IntegrationSpec {
     """)
     .withFallback(ConfigFactory.load())
 
-  private def nodeConfig(managementPort: Int, grpcPort: Int): Config =
+  private def nodeConfig(grpcPort: Int): Config =
     ConfigFactory.parseString(s"""
-      akka.management.http.port = $managementPort
       shopping-cart.grpc {
         interface = "localhost"
         port = $grpcPort
       }
       """)
 
-  class TestNodeFixture(managementPort: Int, grpcPort: Int) {
+  class TestNodeFixture(grpcPort: Int) {
     val testKit =
-      ActorTestKit(
-        "IntegrationSpec",
-        nodeConfig(managementPort, grpcPort).withFallback(IntegrationSpec.config).resolve())
+      ActorTestKit("IntegrationSpec", nodeConfig(grpcPort).withFallback(IntegrationSpec.config).resolve())
 
     def system: ActorSystem[_] = testKit.system
 
@@ -150,15 +137,12 @@ class IntegrationSpec
   implicit private val patience: PatienceConfig =
     PatienceConfig(5.seconds, Span(100, org.scalatest.time.Millis))
 
-  private val nodeCount = 3
-  private val portCount = 2
-  private val grpcPorts =
-    SocketUtil.temporaryServerAddresses(nodeCount * portCount, "127.0.0.1").map(_.getPort).grouped(portCount).toSeq
+  private val grpcPorts = SocketUtil.temporaryServerAddresses(3, "127.0.0.1").map(_.getPort)
 
   // one TestKit (ActorSystem) per cluster node
-  private val testNode1 = new TestNodeFixture(grpcPorts(0)(0), grpcPorts(0)(1))
-  private val testNode2 = new TestNodeFixture(grpcPorts(1)(0), grpcPorts(1)(1))
-  private val testNode3 = new TestNodeFixture(grpcPorts(2)(0), grpcPorts(2)(1))
+  private val testNode1 = new TestNodeFixture(grpcPorts(0))
+  private val testNode2 = new TestNodeFixture(grpcPorts(1))
+  private val testNode3 = new TestNodeFixture(grpcPorts(2))
 
   private val systems3 = List(testNode1, testNode2, testNode3).map(_.testKit.system)
 
@@ -213,7 +197,7 @@ class IntegrationSpec
         val x = ScalaPBAny.parseFrom(bytes)
         val typeUrl = x.typeUrl
         val inputBytes = x.value.newCodedInput()
-        val event: Any =
+        val event: AnyRef =
           typeUrl match {
             case "shopping-cart-service/shoppingcart.ItemAdded" =>
               proto.ItemAdded.parseFrom(inputBytes)
@@ -232,6 +216,7 @@ class IntegrationSpec
       .recover {
         case e: Exception =>
           logger.error(s"Test consumer of $topic failed", e)
+          Done
       }
   }
 
