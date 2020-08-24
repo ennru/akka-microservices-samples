@@ -22,7 +22,7 @@ script:
 
 jobs:
   include:
-    - stage: compile
+    - stage: test
       env:
         DIR="docs-source/docs/modules/cqrs/examples/shopping-analytics-service-scala"
         CMD="Test/compile; scalafmtCheckAll"
@@ -42,7 +42,7 @@ jobs:
       name: "Run Antora to create site"
 
 stages:
-  - name: compile
+  - name: test
     if: NOT tag =~ ^v
 
   - name: site
