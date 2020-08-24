@@ -17,6 +17,7 @@ before_install:
 script:
   - cd "$DIR"
   - java -version
+  - if [ -f docker-compose.yml ]; then docker-compose ps; fi
   - sbt -jvm-opts .jvmopts-travis "$CMD"
 
 jobs:
@@ -28,7 +29,7 @@ jobs:
       name: "Shopping analytics service"
     - env:
         DIR="docs-source/docs/modules/cqrs/examples/shopping-cart-service-scala"
-        CMD="Test/compile; scalafmtCheckAll"
+        CMD="test; scalafmtCheckAll"
       name: "Shopping cart service"
     - env:
         DIR="docs-source/docs/modules/cqrs/examples/shopping-order-service-scala"
