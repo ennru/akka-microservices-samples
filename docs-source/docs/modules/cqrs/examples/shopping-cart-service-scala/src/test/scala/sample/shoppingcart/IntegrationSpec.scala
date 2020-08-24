@@ -2,10 +2,8 @@ package sample.shoppingcart
 
 import java.util.UUID
 
-import scala.concurrent.Await
-import scala.concurrent.Future
+import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
-
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -33,6 +31,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.Span
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.slf4j.LoggerFactory
 import sample.shoppingorder.proto.OrderRequest
 import sample.shoppingorder.proto.OrderResponse
 import sample.shoppingorder.proto.ShoppingOrderService
@@ -43,6 +42,18 @@ object IntegrationSpec {
 
   val config: Config = ConfigFactory
     .parseString(s"""
+      akka.discovery.method = config
+      
+      akka.discovery.config.services = {
+        // The Kafka broker's bootstrap servers
+        "shopping-kafka-broker" = {
+          endpoints = [
+            { host = "localhost", port = 9092 }
+          ]
+        }
+      }
+
+      akka.remote.artery.canonical.port = 0
       akka.cluster {
          seed-nodes = []
          jmx.multi-mbeans-in-same-jvm = on
@@ -100,17 +111,20 @@ object IntegrationSpec {
     """)
     .withFallback(ConfigFactory.load())
 
-  private def nodeConfig(grpcPort: Int): Config =
+  private def nodeConfig(managementPort: Int, grpcPort: Int): Config =
     ConfigFactory.parseString(s"""
+      akka.management.http.port = $managementPort
       shopping-cart.grpc {
         interface = "localhost"
         port = $grpcPort
       }
       """)
 
-  class TestNodeFixture(grpcPort: Int) {
+  class TestNodeFixture(managementPort: Int, grpcPort: Int) {
     val testKit =
-      ActorTestKit("IntegrationSpec", nodeConfig(grpcPort).withFallback(IntegrationSpec.config).resolve())
+      ActorTestKit(
+        "IntegrationSpec",
+        nodeConfig(managementPort, grpcPort).withFallback(IntegrationSpec.config).resolve())
 
     def system: ActorSystem[_] = testKit.system
 
@@ -131,15 +145,20 @@ class IntegrationSpec
     with Eventually {
   import IntegrationSpec.TestNodeFixture
 
+  private val logger = LoggerFactory.getLogger(classOf[IntegrationSpec])
+
   implicit private val patience: PatienceConfig =
     PatienceConfig(5.seconds, Span(100, org.scalatest.time.Millis))
 
-  private val grpcPorts = SocketUtil.temporaryServerAddresses(4, "127.0.0.1").map(_.getPort)
+  private val nodeCount = 3
+  private val portCount = 2
+  private val grpcPorts =
+    SocketUtil.temporaryServerAddresses(nodeCount * portCount, "127.0.0.1").map(_.getPort).grouped(portCount).toSeq
 
   // one TestKit (ActorSystem) per cluster node
-  private val testNode1 = new TestNodeFixture(grpcPorts(0))
-  private val testNode2 = new TestNodeFixture(grpcPorts(1))
-  private val testNode3 = new TestNodeFixture(grpcPorts(2))
+  private val testNode1 = new TestNodeFixture(grpcPorts(0)(0), grpcPorts(0)(1))
+  private val testNode2 = new TestNodeFixture(grpcPorts(1)(0), grpcPorts(1)(1))
+  private val testNode3 = new TestNodeFixture(grpcPorts(2)(0), grpcPorts(2)(1))
 
   private val systems3 = List(testNode1, testNode2, testNode3).map(_.testKit.system)
 
@@ -178,6 +197,7 @@ class IntegrationSpec
 
   private def initializeKafkaTopicProbe(): Unit = {
     implicit val sys: ActorSystem[_] = testNode1.system
+    implicit val ec: ExecutionContext = sys.executionContext
     val topic = sys.settings.config.getString("shopping-cart.kafka-topic")
     val config = sys.settings.config.getConfig("shopping-cart.test.kafka.consumer")
     val groupId = UUID.randomUUID().toString
@@ -209,6 +229,10 @@ class IntegrationSpec
         event
       }
       .runForeach(kafkaTopicProbe.ref.tell)
+      .recover {
+        case e: Exception =>
+          logger.error(s"Test consumer of $topic failed", e)
+      }
   }
 
   override protected def afterAll(): Unit = {
