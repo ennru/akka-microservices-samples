@@ -17,7 +17,7 @@ before_install:
 script:
   - cd "$DIR"
   - java -version
-  - if [ -f docker-compose.yml ]; then docker-compose ps; fi
+  - if [ -f docker-compose.yml ]; then docker-compose up -d; fi
   - sbt -jvm-opts .jvmopts-travis "$CMD"
 
 jobs:
