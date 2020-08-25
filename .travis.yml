@@ -25,7 +25,7 @@ jobs:
     - stage: test
       env:
         DIR="docs-source/docs/modules/cqrs/examples/shopping-analytics-service-scala"
-        CMD="Test/compile; scalafmtCheckAll"
+        CMD="test; scalafmtCheckAll"
       name: "Shopping analytics service"
     - env:
         DIR="docs-source/docs/modules/cqrs/examples/shopping-cart-service-scala"
@@ -33,7 +33,7 @@ jobs:
       name: "Shopping cart service"
     - env:
         DIR="docs-source/docs/modules/cqrs/examples/shopping-order-service-scala"
-        CMD="Test/compile; scalafmtCheckAll"
+        CMD="test; scalafmtCheckAll"
       name: "Shopping order service"
 
     - stage: site

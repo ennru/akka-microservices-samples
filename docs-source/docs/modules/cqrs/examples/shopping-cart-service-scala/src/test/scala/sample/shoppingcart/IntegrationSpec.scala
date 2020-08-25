@@ -2,8 +2,6 @@ package sample.shoppingcart
 
 import java.util.UUID
 
-import akka.Done
-
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
@@ -58,11 +56,9 @@ object IntegrationSpec {
         events-by-tag {
           eventual-consistency-delay = 200ms
         }
-      
         query {
           refresh-interval = 500 ms
         }
-
         journal.keyspace = $keyspace
         journal.keyspace-autocreate = on
         journal.tables-autocreate = on
@@ -84,9 +80,7 @@ object IntegrationSpec {
       }
       
       akka.discovery.method = config
-
       akka.discovery.config.services = {
-        // The Kafka broker's bootstrap servers
         "shopping-kafka-broker" = {
           endpoints = [
             { host = "localhost", port = 9092 }
@@ -94,10 +88,12 @@ object IntegrationSpec {
         }
       }
       
-      akka.actor.testkit.typed.single-expect-default = 5s
-      # For LoggingTestKit
-      akka.actor.testkit.typed.filter-leeway = 5s
-      akka.actor.testkit.typed.throw-on-shutdown-timeout = off
+      akka.actor.testkit.typed {
+        single-expect-default = 5s
+        filter-leeway = 5s
+        system-shutdown-default = 30s
+        throw-on-shutdown-timeout = off
+      }
     """)
     .withFallback(ConfigFactory.load())
 
@@ -213,10 +209,10 @@ class IntegrationSpec
         event
       }
       .runForeach(kafkaTopicProbe.ref.tell)
-      .recover {
+      .failed
+      .foreach {
         case e: Exception =>
           logger.error(s"Test consumer of $topic failed", e)
-          Done
       }
   }
 
