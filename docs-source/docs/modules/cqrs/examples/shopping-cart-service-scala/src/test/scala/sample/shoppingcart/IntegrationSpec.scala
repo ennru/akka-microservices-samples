@@ -131,7 +131,7 @@ class IntegrationSpec
   private val logger = LoggerFactory.getLogger(classOf[IntegrationSpec])
 
   implicit private val patience: PatienceConfig =
-    PatienceConfig(5.seconds, Span(100, org.scalatest.time.Millis))
+    PatienceConfig(20.seconds, Span(100, org.scalatest.time.Millis))
 
   private val grpcPorts = SocketUtil.temporaryServerAddresses(3, "127.0.0.1").map(_.getPort)
 

@@ -12,6 +12,7 @@
     <logger name="akka.http.impl" level="WARN"/>
     <logger name="akka.persistence" level="DEBUG"/>
     <logger name="akka.persistence.cassandra" level="DEBUG"/>
+    <logger name="akka.serialization" level="WARN"/>
 
     <logger name="com.codahale.metrics" level="INFO"/>
     <logger name="com.datastax.oss.driver" level="WARN"/>
