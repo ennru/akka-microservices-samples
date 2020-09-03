@@ -7,7 +7,7 @@ Welcome to the _Akka Platform Guide_!
 
 Akka is a toolkit for building highly concurrent, distributed, and resilient message-driven applications.
 
-Both beginners getting started with _Reactive_ principles and active users of Akka will find this guide useful to get a good understanding of how Akka fits into _Reactive_ and how Reactive concepts apply to Akka. The guide complements the {akka}[Akka reference documentation] {akka}[{tab-icon}, window="tab"] which presents all Akka features in detail.
+Both beginners getting started with _Reactive_ principles and active Akka users will find this guide useful to improve their understanding of how Akka fits into _Reactive_ and how Reactive concepts apply to Akka. The guide complements the {akka}[Akka reference documentation] {akka}[{tab-icon}, window="tab"] which presents all Akka features in detail.
 
 == How to get the most out of this guide
 
