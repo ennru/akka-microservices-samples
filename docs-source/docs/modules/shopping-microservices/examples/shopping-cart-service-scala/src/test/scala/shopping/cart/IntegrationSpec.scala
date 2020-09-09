@@ -74,19 +74,9 @@ object IntegrationSpec {
       
       shopping-cart-service.kafka.topic = "shopping_cart_events_$uniqueQualifier"
 
-      shopping-cart-service.test.kafka.consumer: $${akka.kafka.consumer} {
-        service-name = "shopping-kafka-broker"
+      akka.kafka.consumer {
         kafka-clients {
           auto.offset.reset = "earliest"
-        }
-      }
-      
-      akka.discovery.method = config
-      akka.discovery.config.services = {
-        "shopping-kafka-broker" = {
-          endpoints = [
-            { host = "localhost", port = 9092 }
-          ]
         }
       }
       
