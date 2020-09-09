@@ -174,10 +174,9 @@ class IntegrationSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll w
     implicit val sys: ActorSystem[_] = testNode1.system
     implicit val ec: ExecutionContext = sys.executionContext
     val topic = sys.settings.config.getString("shopping-cart-service.kafka.topic")
-    val config = sys.settings.config.getConfig("shopping-cart-service.test.kafka.consumer")
     val groupId = UUID.randomUUID().toString
     val consumerSettings =
-      ConsumerSettings(config, new StringDeserializer, new ByteArrayDeserializer)
+      ConsumerSettings(sys, new StringDeserializer, new ByteArrayDeserializer)
         .withBootstrapServers("localhost:9092") // provided by Docker compose
         .withGroupId(groupId)
     Consumer
