@@ -6,7 +6,7 @@ antora_docker_image_tag := latest
 
 work_dir := ${ROOT_DIR}/target
 
-staging_dir := ${work_dir}/staging
+staging_dir := ${CURDIR}/build/akka-platform-guide/
 
 all: build
 
@@ -37,7 +37,8 @@ html: clean  docker-image
 		docs-source/site.yml
 	@echo "Done"
 
-html-author-mode: clean docker-image
+html-author-mode: clean ${staging_dir} docker-image
+	cp -r target/staging/snapshot/* ${staging_dir}
 	docker run \
 		-u $(shell id -u):$(shell id -g) \
 		-v ${ROOT_DIR}:/antora \
@@ -45,7 +46,7 @@ html-author-mode: clean docker-image
 		-t ${antora_docker_image}:${antora_docker_image_tag} \
 		--cache-dir=./.cache/antora \
 		docs-source/author-mode-site.yml
-	@echo "Done"
+	@echo "Done file://${work_dir}/staging/snapshot/index.html"
 
 check-links: docker-image
 	docker run \
@@ -63,7 +64,7 @@ list-todos: html docker-image
 		-t ${antora_docker_image}:${antora_docker_image_tag} \
 		--cache-dir=./.cache/antora \
 		--entrypoint /bin/sh \
-		-c 'find /antora/docs-source/build/site/cloudflow/${version} -name "*.html" -print0 | xargs -0 grep -iE "TODO|FIXME|REVIEWERS|adoc"'
+		-c 'find /antora/target/staging/snapshot/ -name "*.html" -print0 | xargs -0 grep -iE "TODO|FIXME|REVIEWERS|adoc"'
 
 ${work_dir}:
 	mkdir -p ${work_dir}
