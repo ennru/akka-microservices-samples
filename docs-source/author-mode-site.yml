@@ -29,5 +29,5 @@ asciidoc:
     page-pagination: ""
 
 output:
-  dir: ./../target/staging
+  dir: ./../target
   clean: true
