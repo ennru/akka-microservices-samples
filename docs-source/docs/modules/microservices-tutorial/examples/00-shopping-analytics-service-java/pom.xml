@@ -56,11 +56,6 @@
             <url>https://repo.akka.io/snapshots/</url>
             <layout>default</layout>
         </repository>
-        <repository>
-            <id>akka-http-snapshots</id>
-            <name>Akka HTTP Snapshots</name>
-            <url>https://dl.bintray.com/akka/snapshots</url>
-        </repository>
     </repositories>
 
     <dependencies>
@@ -90,28 +85,8 @@
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-discovery_${scala.binary.version}</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-persistence-cassandra_${scala.binary.version}</artifactId>
             <version>${akka-persistence-cassandra.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-http_${scala.binary.version}</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-http-jackson_${scala.binary.version}</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-http-spray-json_${scala.binary.version}</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-http2-support_${scala.binary.version}</artifactId>
         </dependency>
         <dependency>
             <groupId>com.lightbend.akka</groupId>
