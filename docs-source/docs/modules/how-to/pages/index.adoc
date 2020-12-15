@@ -1,0 +1,6 @@
+= How to ...
+
+
+include::partial$include.adoc[]
+
+include::partial$listing.adoc[]

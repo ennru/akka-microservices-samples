@@ -1,56 +1,59 @@
 SHELL_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOT_DIR := ${SHELL_DIR}
 
-antora_docker_image     := antora/antora
-antora_docker_image_tag := 2.3.1
+antora_docker_image     := local/antora-doc
+antora_docker_image_tag := latest
 
-work_dir := ${ROOT_DIR}/target
-
-staging_dir := ${work_dir}/staging
-
-# javascaladoc_dir := ${staging_dir}/docs/current/api
+target_dir := ${ROOT_DIR}/target
 
 all: build
 
 local-preview: html-author-mode
 	@echo "Access the documentation on http://localhost:8000"
-	(cd target/staging/; python3 -m http.server)
-
+	(cd ${target_dir}/; python3 -m http.server)
 
 show:
-	echo work dir: ${work_dir}
-	echo ROOT_DIR: ${ROOT_DIR}
+	@echo ROOT_DIR: ${ROOT_DIR}
+	@echo target_dir: ${target_dir}
 
 clean:
-	rm -rf ${work_dir}
+	rm -rf ${target_dir}
 
-# build: clean html javascaladoc_staged print-site
-build: clean html print-site
+docker-image:
+	(cd ${ROOT_DIR}/antora-docker;  docker build -t ${antora_docker_image}:${antora_docker_image_tag} .)
 
-html: clean
+build: clean html prepare-downloads done
+
+prepare-downloads:
+	${ROOT_DIR}/scripts/prepare-downloads.sh
+
+html: clean docker-image
 	docker run \
 		-u $(shell id -u):$(shell id -g) \
-		--privileged \
 		-v ${ROOT_DIR}:/antora \
 		--rm \
 		-t ${antora_docker_image}:${antora_docker_image_tag} \
 		--cache-dir=./.cache/antora \
-		--stacktrace \
 		docs-source/site.yml
-	@echo "Done"
 
-html-author-mode: clean
+done:
+	@echo "Done ${target_dir}/index.html"
+	@echo "# Tech Hub wants to know what to publish:"
+	@echo "${target_dir}"
+
+html-author-mode: clean docker-image
+	mv docs-source/supplemental_ui/partials/head-scripts.hbs docs-source/supplemental_ui/partials/head-scripts.hbs.tmp
 	docker run \
 		-u $(shell id -u):$(shell id -g) \
 		-v ${ROOT_DIR}:/antora \
 		--rm \
 		-t ${antora_docker_image}:${antora_docker_image_tag} \
 		--cache-dir=./.cache/antora \
-		--stacktrace \
 		docs-source/author-mode-site.yml
-	@echo "Done"
+	mv docs-source/supplemental_ui/partials/head-scripts.hbs.tmp docs-source/supplemental_ui/partials/head-scripts.hbs
+	@echo "Done ${target_dir}/index.html"
 
-check-links:
+check-links: docker-image
 	docker run \
 		-v ${ROOT_DIR}:/antora \
 		--rm \
@@ -59,33 +62,11 @@ check-links:
 		--cache-dir=./.cache/antora \
 		-c 'find /antora/docs-source -name '*.adoc' -print0 | xargs -0 -n1 asciidoc-link-check -p -c docs-source/asciidoc-link-check-config.json'
 
-list-todos: html
+list-todos: html docker-image
 	docker run \
 		-v ${ROOT_DIR}:/antora \
 		--rm \
 		--entrypoint /bin/sh \
 		-t ${antora_docker_image}:${antora_docker_image_tag} \
 		--cache-dir=./.cache/antora \
-		-c 'find /antora/docs-source/build/site/cloudflow/${version} -name "*.html" -print0 | xargs -0 grep -iE "TODO|FIXME|REVIEWERS|adoc"'
-
-# Generate the ScalaDoc and the JavaDoc, and put it in ${output}/scaladoc and ${output}/javadoc
-# javascaladoc:
-# 	-(cd ${ROOT_DIR}/core && sbt clean unidoc )
-
-# javascaladoc_staged: ${javascaladoc_dir} javascaladoc
-# 	cp -r ${ROOT_DIR}/core/target/scala-2.12/unidoc ${javascaladoc_dir}/scaladoc
-# 	cp -r ${ROOT_DIR}/core/target/javaunidoc ${javascaladoc_dir}/javadoc
-
-${work_dir}: 
-	mkdir -p ${work_dir}
-
-${staging_dir}:
-	mkdir -p ${staging_dir}
-
-# ${javascaladoc_dir}:
-# 	mkdir -p ${javascaladoc_dir}/scaladoc
-# 	mkdir -p ${javascaladoc_dir}/javadoc
-
-print-site:
-	# The result directory with the contents of this build:
-	@echo "${staging_dir}"
+		-c 'find /antora/target/ -name "*.html" -print0 | xargs -0 grep -iE "TODO|FIXME|REVIEWERS|adoc"'

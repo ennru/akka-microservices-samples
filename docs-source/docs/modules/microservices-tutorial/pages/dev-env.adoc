@@ -1,0 +1,85 @@
+= I: Set up your development environment
+:page-supergroup-java-scala: Language
+
+include::ROOT:partial$include.adoc[]
+
+Select your preferred language (Java/Scala) above.
+
+To follow tutorial steps you will need a code editor, a build tool, and `grpcurl` (a CLI for sending gRPC calls). You can use your preferred code editor. We provide the steps for using https://www.jetbrains.com/idea/[IntelliJ IDEA {tab-icon}, window="tab"] from JetBrains. For the [.group-scala]#Scala# [.group-java]#Java# version of the example, we use [.group-scala]#`sbt`# [.group-java]#`Apache Maven`# as the build tool.
+
+This tutorial uses Cassandra and Kafka. You may run local installations during development, but we recommend running both services using https://docs.docker.com[Docker {tab-icon}, window="tab"]. The template project's root directory includes a https://docs.docker.com/compose/[Docker Compose {tab-icon}, window="tab"] file that you can use to run Cassandra and Kafka. The provided Docker Compose file also runs Zookeeper which is required to run a Kafka broker.
+
+The following sections provide links for downloading and installing:
+
+* <<IntelliJ IDEA>>
+* <<Build tool>>
+* <<The grpcurl tool>>
+* <<Docker and Docker Compose>>
+
+We also provide <<Downloadable example source>> of the different phases of completion.
+
+:!sectnums:
+== IntelliJ IDEA
+
+[.tabset]
+Java::
++
+Download and install https://www.jetbrains.com/idea/download/[IntelliJ {tab-icon}, window="tab"].
+
+Scala::
++
+To install IntelliJ and prepare to develop the Scala example, follow these steps:
+
+. Download and install https://www.jetbrains.com/idea/download/[IntelliJ {tab-icon}, window="tab"].
+. From the *Preferences* menu, add the *Scala* plugin.
+
+
+== Build tool
+
+[.tabset]
+Java::
++
+For the Java Shopping Cart example, we use `Maven` as the build tool. https://maven.apache.org/install.html[Install Maven] if you haven't already.
+
+Scala::
++
+For the Scala Shopping Cart example, we use `sbt` as the build tool. https://www.scala-sbt.org/download.html[Install sbt] if you haven't already.
++
+[TIP.Scala]
+====
+`sbt` is an interactive shell. If you start it with the `sbt` command, you can repeatedly run tasks like `compile` and `test` in the sbt shell. In the tutorial we use the full command for clarity, such as `sbt compile`. You can run tasks independently in this way, but it's faster to leave the `sbt` shell running and only enter the tasks. For example:
++
+----
+$ sbt
+...
+sbt:shopping-cart-service> compile
+...
+sbt:shopping-cart-service> test
+...
+----
+====
+
+== The grpcurl tool
+
+The https://github.com/fullstorydev/grpcurl[grpcurl {tab-icon}, window="tab"] tool is useful for making gRPC calls from the command line. It is used in tutorial procedures and we recommend that you install it as described in https://github.com/fullstorydev/grpcurl#installation[the grpcurl documentation {tab-icon}, window="tab"].
+
+== Docker and Docker Compose
+[#docker]
+
+See the instructions for installing https://docs.docker.com/get-docker/[Docker {tab-icon}, window="tab"] and https://docs.docker.com/compose/install/[Docker Compose {tab-icon}, window="tab"] on your platform.
+
+== Downloadable example source
+
+We encourage you to enter the example code, even if by copying and pasting. If you get stuck or prefer to skip some main steps, we provide source files for download. The introduction of each page with tutorial development steps includes links to two zip files: one with completed source up to that point, and one with completed source for the steps described on that page.
+
+In xref:template.adoc[next step] you will find instructions of how to download the starting template for the tutorial.
+
+[.tabset]
+Java::
++
+If you would like to run the full example, you can download the link:_attachments/6-shopping-cart-complete-java.zip[full Java sources]. In this case, we suggest you scan the tutorial instructions to identify the source files that you can learn from.
+
+Scala::
++
+If you would like to run the full example, you can download the link:_attachments/6-shopping-cart-complete-scala.zip[full Scala sources]. In this case, we suggest you scan the tutorial instructions to identify the source files that you can learn from.
+

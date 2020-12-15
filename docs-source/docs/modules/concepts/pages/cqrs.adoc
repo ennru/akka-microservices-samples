@@ -1,0 +1,41 @@
+= Command Query Responsibility Segregation (CQRS)
+
+
+include::partial$include.adoc[]
+
+Command Query Responsibility Segregation (abbreviated as CQRS) is an architecture pattern that promotes the divide into read and write operations of your datastore.
+
+In traditional systems where both reads and updates use a single set of database tables you either model and design for speed of read or speed of write. As your application grows, you may need to produce different representations of the same data (e.g daily reports, listing, etc...) and these eventually become either very slow to produce or happen in a transaction during a write operation slowing the operation down.
+
+In CQRS, the write-side, responsible to handle Commands, stores data using a database form with the least impedance mismatch in order to increase the throughput. As incremental changes in the state happen, a mechanism processes these increments asynchronously and produces a new database representation tailored for the read-side. The read-side, responsible to handle Queries, processes read operations and accesses the information on the read datastore.
+
+[TIP]
+====
+The terms *data* and *information* should not be used interchangeably:
+
+* *data* refers to the source of truth
+* *information* refers to derived representations of the data
+
+It is safe to lose some information as long as the loss doesn't affect the data that produced that information.
+====
+
+You can start refactoring an application towards a CQRS architecture by identifying the operations that produce a change in the state (the Commands) and the operations that only read from the state (the Queries).
+
+== CQRS and Event Sourcing
+
+As described above, CQRS doesn't require the write-side handling the commands to be implemented using xref:event-sourcing.adoc[Event Sourcing]. Using Event Sourcing, though, is a perfect fit for CQRS.
+
+In CQRS, in order to build the read-side representations we want a stream of data changes to build projections from, and that is exactly what Event Sourcing provides. In Event Sourcing, state is stored as an append-only, ordered list of changes (referred to as events).
+
+Summing up, in a CQRS applications, the write-side and the read-side operate {reactive-principles}/principles/assert-autonomy.html[autonomosly {tab-icon}, window="tab"]. Generally, the write-side provides {reactive-principles}/principles/tailor-consistency.html[strong consistency {tab-icon}, window="tab"] while the read-side provides xref:eventual-consistency.adoc[eventual consistency].
+
+== Learn more
+
+* xref:how-to:from-crud-to-eventsourcing.adoc[]
+
+* To see a project implementing CQRS in action, have a look at the xref:microservices-tutorial:index.adoc["Implementing Microservices with Akka" tutorial]. In steps xref:microservices-tutorial:entity.adoc[], and xref:microservices-tutorial:complete-entity.adoc[] you will implement a write-side using {akka}/typed/persistence.html[Akka Persistence {tab-icon}, window="tab"]  which implements Event Sourcing. Then, in the step xref:microservices-tutorial:projection-query.adoc[] you will implement a read-side using {akka-projection}[Akka Projection {tab-icon}, window="tab"].
+
+* The {akka-blog}/news/2020/09/10/akka-projection-intro-video[Introduction to Akka Projections video {tab-icon}, window="tab"] is a good starting point for learning Akka Projections.
+
+* See also the CQRS documentation in the {akka-projection}/use-cases.html[Akka Projections documentation {tab-icon}, window="tab"] for more details on how Akka Projection can be used to build a Query side.
+

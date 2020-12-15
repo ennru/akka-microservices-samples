@@ -1,4 +1,4 @@
-= Lightbend Cloudflow Docs README
+= Lightbend Akka Platform Guide README
 
 The source files for this guide use asciidoc syntax and the project is configured to build with Antora. To review and suggest changes, we recommend building the HTML files locally. This allows you to view the guide structure as a whole and to read pages the way someone using the documentation would.
 
@@ -31,12 +31,12 @@ To create a new page, start your file with a title and select from the following
 :idprefix:
 :idseparator: -
 :!example-caption:
-:toc: // enables page-level toc, to disable for pages with no sub-heads, add a !, :!toc:
-:toc-title: ON THIS PAGE
-:toclevels: 2
-:!page-supergroup-scala-java: Language //remove '!' to enable tabbed example boxes for scala and java
-:!page-supergroup-sbt-maven: Build Tool //remove '!' to enable tabbed example boxes for sbt and maven
-:!page-supergroup-sbt-maven-gradle: Build Tool  //remove '!' to enable tabbed example boxes for sbt, maven, and gradle
+
+:page-toclevels: 3 //overide number of toc levels, default is 2. To turn off toc at page level set to -1
+
+:!page-supergroup-java-scala: Language //remove '!' to enable tabbed example boxes for scala and java
+:!page-supergroup-maven-sbt: Build Tool //remove '!' to enable tabbed example boxes for maven and sbt
+:!page-supergroup-maven-gradle-sbt: Build Tool  //remove '!' to enable tabbed example boxes for maven, gradle and sbt
 :!page-supergroup-minishift-minikube: Platform  //remove '!' to enable tabbed example boxes for Minishift and Minikube
 :!page-supergroup-kubernetes-openshift: Platform //remove '!' to enable tabbed example boxes for Kubernetes and OpenShift
 :!page-supergroup-mac-ubuntu: OS //remove '!' to enable tabbed example boxes for Mac and Ubuntu
@@ -84,7 +84,7 @@ Antora has a good support for the tags:
 * multiple tag keys can be defined, to extract different section.
 * when a tagged section is requested, all the other tag comments are automatically removed from the imported code.
 
-== Adding tabbed example blocks
+== Tabsets: Adding tabbed example blocks
 To add tabbed example blocks to a page, use the following syntax:
 
 [source,adoc]
@@ -111,7 +111,38 @@ Follow these steps to install Virtualbox on Ubuntu 16.04+:
 --
 ----
 
-NOTE: For more examples of tabbed example blocks, or to request an addition to the tabs, see https://github.com/lightbend/antora-ui-lightbend-theme/
+== Inline text examples that respect Supergroups
+Inline text will respect a supergroup preference such as Java/Scala when using the following syntax:
+
+=== Plain Text
+
+[source, asciidoc]
+----
+Plain inline text about [.group-scala]#scala# [.group-java]#java#.
+
+Bold styling [.group-scala]#*scala*# [.group-java]#*java*# or formatted as [.group-scala]#`scala code`# [.group-java]#`java code`#.
+----
+
+== Paragraphs that respect Supergroups
+
+[source, asciidoc]
+----
+[.group-scala] 
+This is a Scala specific paragraph.
+
+[.group-java]
+This is a Java specific paragraph.
+----
+
+== Admonitions that respect Supergroups
+
+[source, asciidoc]
+----
+[NOTE.group-java]
+====
+This is a *Java* specific note.
+====
+----
 
 == Linking to section headings
 

@@ -1,27 +1,20 @@
 :page-partial:
 // global attributes
-:cloudflow-version: 2.1.0-SNAPSHOT
-:cloudflow-examples-version: 2.1.0-SNAPSHOT
-
-:installer-image-tag:          INSTALLER_IMAGE_TAG
-:kubernetes-platform-name:     Kubernetes
-:kubernetes-platform-version:  1.12
-:kubectl-plugin-version:       KUBECTL_PLUGIN_VERSION
-
-:cli:                          kubectl
-:cli-plugin:                   kubectl
-
 :latest-openshift-platform-version:        3.11
 :minimum-kubernetes-on-openshift-version:  1.11
 :minimum-openshift-platform-version:       3.11
 :minimum-platform-version-major-dot-minor: 3.11
-:minimum-sbt-version:                      0.13.7
-:latest-sbt-version: 					   1.3.8	 
 
-// link shortcuts for `link:{akka}/typed/index.html` notation
+// link shortcuts for `{akka}/typed/index.html` notation
 :akka:  https://doc.akka.io/docs/akka/current
 :akka-http:  https://doc.akka.io/docs/akka-http/current
 :akka-grpc:  https://doc.akka.io/docs/akka-grpc/current
 :akka-management:  https://doc.akka.io/docs/akka-management/current
 :akka-persistence-cassandra:  https://doc.akka.io/docs/akka-persistence-cassandra/current
 :akka-projection:  https://doc.akka.io/docs/akka-projection/current
+:alpakka:  https://doc.akka.io/docs/alpakka/current
+
+//constant to add icon for opening link in a new page
+:tab-icon: image:ROOT:new-tab.svg[width=12]
+
+:akka-blog:  https://akka.io/blog

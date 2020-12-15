@@ -1,17 +1,39 @@
-= Akka Samples
-:toc:
-:toc-title: ON THIS PAGE
-:toclevels: 2
-:description: Examples projects to illustrate features of Akka
+= Akka Platform Guide
+:page-toclevels: -1
+:description: Guided documentation of Akka for specific use cases
 
 include::ROOT:partial$include.adoc[]
 
-:imagesdir: assets/images
+Welcome to the _Akka Platform Guide_!
 
+Akka is a toolkit for building highly concurrent, distributed, and resilient message-driven applications.
 
-xref:cqrs:index.adoc[Event sourcing and CQRS example]
+Both beginners getting started with _Reactive_ principles and active Akka users will find this guide useful to improve their understanding of how Akka fits into _Reactive_ and how Reactive concepts apply to Akka. The guide complements the {akka}[Akka reference documentation {tab-icon}, window="tab"], which presents all Akka features in detail.
 
-This example illustrates how Akka Persistence enables Event sourcing and how Akka Projection simplifies CQRS for the event-sourced entities.
+The tutorials in this guide show end-to-end use-cases implemented in Akka with the Reactive principles in mind. The tutorials go through implementing a system step-by-step to illustrate how the Akka APIs apply together.
 
+== How to get the most out of this guide
+
+For a code-first experience, have a look at the xref:microservices-tutorial:index.adoc[Implementing Microservices with Akka tutorial] which walks you through an example project and explains how features from the Akka ecosystem fit together to build Reactive Systems. The tutorial will point you to the relevant xref:concepts:index.adoc[concepts] where applicable.
+
+If this is your first experience with Reactive frameworks or with Akka, we present some background and ideas behind _Reactive_ in the xref:concepts:index.adoc[Concepts section]. You can read those when they are introduced in the tutorial, or read them first if you prefer a more theoretical overview before diving into the code. There you will learn for example:
+
+* The challenges that Reactive Architecture can help you overcome
+* A summary of Reactive Principles
+* The benefits of using Akka
+
+== Akka Microservices tutorial
+
+The xref:microservices-tutorial:index.adoc[Implementing Microservices with Akka tutorial] illustrates how to implement an Event Sourced CQRS application with Akka Persistence and Akka Projections.
+
+The tutorial shows how to build the services piece by piece:
+
+include::microservices-tutorial:partial$listing.adoc[]
+
+== How to...
+
+Some development tasks arise from requirements on existing projects. The xref:how-to:index.adoc[] section collects guidance for how to introduce a new feature or architectural improvement on an existing codebase.
+
+include::how-to:partial$listing.adoc[]
 
 **This documentation was last published: {localdate}**
