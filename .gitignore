@@ -13,5 +13,10 @@
 .classpath
 .history
 .idea
+.bsp
 logs
 target
+/build
+
+# code sample zip files are generated on this path, we don't want them accidentally committed
+docs-source/docs/modules/microservices-tutorial/assets/attachments/*.zip

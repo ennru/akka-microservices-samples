@@ -1,0 +1,87 @@
+= Relational database - Amazon RDS
+:page-toclevels: 3
+
+include::partial$include.adoc[]
+
+== Create RDS PostgrSQL database
+
+Create a new database from https://console.aws.amazon.com/rds/home:[Amazon Container Services console {tab-icon}, window="tab"]. Select the region you are working in.
+
+The example in the xref:microservices-tutorial:index.adoc[Implementing Microservices with Akka tutorial] is using PostgreSQL.
+
+For a trial PostgreSQL you can select the following aside from defaults:
+
+- Standard create
+- PostgreSQL
+- Free tier
+- DB instance identifier: `shopping-cart`
+- Master password: <a password>
+- Disable storage autoscaling
+- VPC: Use the same as your EKS cluster is running in
+- Public access: Yes (if you want to access from outside of the VPC)
+- Create new VPC security group: `rds-shopping-cart-sg`
+- Disable Additional configuration / Enable automatic backups
+
+The security group will automatically have one role added to it which allows traffic from your current IP to the PostgreSQL port. If your IP changes then you'll need to update the security group.
+
+You find more detailed instructions in the https://aws.amazon.com/getting-started/tutorials/create-connect-postgresql-db/[Amazon RDS PostgreSQL documentation {tab-icon}, window="tab"]
+
+== Security group configuration
+
+If the RDS instance is in the same VPC as the EKS cluster (as described above):
+
+- Add an inbound rule to the RDS security group for port 5432 to the security group of the nodes in the EKS cluster
+- The EKS security group can be found on the EKS page in the console in the node group launch template
+
+More details in https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_VPC.Scenarios.html#USER_VPC.Scenario1[A DB instance in a VPC accessed by an EC2 instance in the same VPC {tab-icon}, window="tab"]
+
+If the RDS instance is in a different VPC:
+
+- Peer the two VPCs
+- Add an inbound rule to the RDS security group for the IP CIDR of the EKS VPC
+
+More details in https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_VPC.Scenarios.html#USER_VPC.Scenario3[A DB instance in a VPC accessed by an EC2 instance in a different VPC {tab-icon}, window="tab"]
+
+== Connect with SQL tool
+
+To create tables and inspect the data it's useful to be able to connect a SQL tool such as https://www.pgadmin.org[https://www.pgadmin.org {tab-icon}, window="tab"].
+
+This requires a public IP and the security group for the instance must allow external access to port 5432 from your IP or 0.0.0.0.
+
+See https://aws.amazon.com/getting-started/tutorials/create-connect-postgresql-db/[documentation of how to retrieve connection settings {tab-icon}, window="tab"].
+
+Create the tables with the `ddl-scripts/create_tables.cql` script in the example of the xref:microservices-tutorial:index.adoc[Implementing Microservices with Akka tutorial].
+
+== JDBC configuration
+
+To use the JDBC integration in the Akka Platform operator you place the connection credentials in a https://kubernetes.io/docs/concepts/configuration/secret/[Secret {tab-icon}, window="tab"]. The Secret must contain three entries:
+
+* `connectionUrl` - the JDBC connection URL `jdbc:postgresql://<endpoint>:5432/<database name>?reWriteBatchedInserts=true`, for example `jdbc:postgresql://shopping-cart.c46wxwryhegl.eu-central-1.rds.amazonaws.com:5432/postgres?reWriteBatchedInserts=true`
+* `username` - the database username, default master user in RDS PostgrSQL is `postgres`
+* `password` - the database password, the password you defined when creating the RDS PostgrSQL database
+
+See https://aws.amazon.com/getting-started/tutorials/create-connect-postgresql-db/[documentation of how to retrieve connection settings {tab-icon}, window="tab"].
+
+The Secret can be created with the following `kubectl` command, replacing the values for your database:
+
+[source,shell script]
+----
+kubectl create secret generic shopping-cart-service-jdbc-secret --from-literal=username=postgres --from-literal=password=tiger --from-literal=connectionUrl="jdbc:postgresql://shopping-cart.c46wxwryhegl.eu-central-1.rds.amazonaws.com:5432/postgres?reWriteBatchedInserts=true"
+----
+
+To enable the JDBC integration you define the name of the secret in `jdbc` section of the CR:
+
+.kubernetes/shopping-cart-service-cr.yml:
+[source,yaml]
+----
+include::microservices-tutorial:example$02-shopping-cart-service-scala/kubernetes/shopping-cart-service-cr.yml[]
+----
+
+Apply the CR:
+
+[source,shell script]
+----
+kubectl apply -f kubernetes/shopping-cart-service-cr.yml
+----
+
+The Akka Operator will automatically xref:config-secret.adoc#main-conf[provide the configuration] for the connection based on the Secret when the application starts the `ActorSystem`.

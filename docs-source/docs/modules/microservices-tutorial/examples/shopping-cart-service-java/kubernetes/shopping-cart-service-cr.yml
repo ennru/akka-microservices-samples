@@ -1,0 +1,16 @@
+apiVersion: "v1"
+kind: "Namespace"
+metadata:
+  name: "shopping"
+---
+apiVersion: akka.lightbend.com/v1
+kind: AkkaMicroservice
+metadata:
+  name: shopping-cart-service
+  namespace: "shopping"
+spec:
+  image: 803424716218.dkr.ecr.eu-central-1.amazonaws.com/shopping-cart-service:20201217-100759-5d55273
+  jdbc:
+    credentialsSecret: shopping-cart-service-jdbc-secret
+  kafka:
+    credentialsSecret: shopping-cart-service-kafka-secret

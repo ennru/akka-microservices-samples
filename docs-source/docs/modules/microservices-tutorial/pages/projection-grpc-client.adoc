@@ -1,0 +1,297 @@
+= VIII: Projection calling gRPC service
+:page-supergroup-java-scala: Language
+
+include::ROOT:partial$include.adoc[]
+
+To complete the example, we need a way to handle orders. We will add another Projection from the events of the `ShoppingCart` entity. We will also create a gRPC Order Service, `ShoppingOrderService`. The Projection calls the Order Service when the shopping carts are checked out. 
+
+[caption=""]
+image::example-projection-grpc-client.png[Example gRPC client]
+
+This part of the xref:overview.adoc[full example] focuses on the gRPC client in the `SendOrderProjection`. On this page you will learn how to:
+
+* call another service with xref:concepts:akka-grpc.adoc[Akka gRPC]
+* implement another gRPC service by adding the `ShoppingOrderService`
+
+== Source downloads
+
+If you prefer to simply view and run the example, download a zip file containing the completed code:
+
+[.tabset]
+Java::
++
+****
+* link:_attachments/5-shopping-cart-projection-kafka-java.zip[Source] that includes all previous tutorial steps and allows you to start with the steps on this page.
+* link:_attachments/6-shopping-cart-complete-java.zip[Source] with the steps on this page completed.
+****
+
+Scala::
++
+****
+* link:_attachments/5-shopping-cart-projection-kafka-scala.zip[Source] that includes all previous tutorial steps and allows you to start with the steps on this page.
+* link:_attachments/6-shopping-cart-complete-scala.zip[Source] with the steps on this page completed.
+****
+
+:sectnums:
+== Add the Order gRPC service
+
+Let's add the service that handles shopping cart orders. The template and source downloads include a directory named `shopping-order-service` for this purpose. To add the order gRPC service, follow these steps:
+
+. Open the `shopping-order-service` in IntelliJ just as you did with xref:template.adoc#intellij[ the shopping-cart-service]. 
+
+. Define the interface of the service in a protobuf service descriptor. It should be located in the `src/main/protobuf/ShoppingOrderService.proto` in the new `shopping-order-service` project.
++
+[source,protobuf]
+----
+include::example$shopping-order-service-scala/src/main/protobuf/ShoppingOrderService.proto[]
+----
+
+. Generate code by compiling the project:
++
+[.group-java]
+[source,shell script]
+----
+mvn compile
+----
++
+[.group-scala]
+[source,shell script]
+----
+sbt compile
+----
+
+. Implement the `ShoppingOrderService` in a new class `ShoppingOrderServiceImpl`:
++
+[.tabset]
+Java::
++
+.src/main/java/shopping/order/ShoppingOrderServiceImpl.java:
+[source,java,indent=0]
+----
+include::example$shopping-order-service-java/src/main/java/shopping/order/ShoppingOrderServiceImpl.java[]
+----
+
+Scala::
++
+.src/main/scala/shopping/order/ShoppingOrderServiceImpl.scala:
+[source,scala,indent=0]
+----
+include::example$shopping-order-service-scala/src/main/scala/shopping/order/ShoppingOrderServiceImpl.scala[]
+----
+
+. Similar to the xref:grpc-service.adoc[gRPC server for the ShoppingCartService] we need to initialize the gRPC server. Add a `ShoppingOrderServer` [.group-scala]#object# [.group-java]#class#:
++
+[.tabset]
+Java::
++
+.src/main/java/shopping/order/ShoppingOrderServer.java:
+[source,java,indent=0]
+----
+include::example$shopping-order-service-java/src/main/java/shopping/order/ShoppingOrderServer.java[]
+----
+
+Scala::
++
+.src/main/scala/shopping/order/ShoppingOrderServer.scala:
+[source,scala,indent=0]
+----
+include::example$shopping-order-service-scala/src/main/scala/shopping/order/ShoppingOrderServer.scala[]
+----
+
+. Call the `ShoppingOrderServer.init` from `Main`:
++
+[.tabset]
+Java::
++
+[source,java,indent=0]
+----
+include::example$shopping-order-service-java/src/main/java/shopping/order/Main.java[]
+----
+
+Scala::
++
+[source,scala,indent=0]
+----
+include::example$shopping-order-service-scala/src/main/scala/shopping/order/Main.scala[]
+----
+
+NOTE: The `grpc.port` configuration is defined in `local1.conf`, which is included in the generated template project.
+
+== Create the Projection
+
+The new Projection for `shopping-cart-service` events will be similar to the one we developed for Kafka on the xref:projection-kafka.adoc[previous page], but when it receives `ShoppingCart.CheckedOut` events, it will call the `ShoppingOrderService`. 
+
+Create the Projection as follows:
+
+. Include the service definition by copying the `ShoppingOrderService.proto` file from the `shopping-order-service` to the `shopping-cart-service/src/main/protobuf` directory. 
+
+. Generate code by compiling the `shopping-cart-service` project:
++
+[.group-java]
+[source,shell script]
+----
+mvn compile
+----
++
+[.group-scala]
+[source,shell script]
+----
+sbt compile
+----
+
+. Add a `SendOrderProjectionHandler` class in the `shopping-cart-service` project. This is the Projection `Handler` for processing the events:
++
+[.tabset]
+Java::
++
+.src/main/java/shopping/cart/SendOrderProjectionHandler.java:
+[source,java,indent=0]
+----
+include::example$shopping-cart-service-java/src/main/java/shopping/cart/SendOrderProjectionHandler.java[]
+----
+
+Scala::
++
+.src/main/scala/shopping/cart/SendOrderProjectionHandler.scala:
+[source,scala,indent=0]
+----
+include::example$shopping-cart-service-scala/src/main/scala/shopping/cart/SendOrderProjectionHandler.scala[]
+----
+
+<1> `ShoppingOrderService` is the gRPC client
+<2> Retrieve the full shopping cart information from the entity. In the order we need to include the list of items and their quantities. That information is not included in the `ShoppingCart.CheckedOut` event, but we can retrieve it by asking the `ShoppingCart` entity for it.
+<3> Call the `ShoppingOrderService`. If the call to the `ShoppingOrderService` fails, the returned [.group-scala]#`Future[Done]`# [.group-java]#`CompletionStage<Done>`# fails and the Projection is automatically restarted from the previously saved offset. This will result in retrying the call to the `ShoppingOrderService`. Since the Projection has `at-least-once` semantics, the `ShoppingOrderService` must be idempotent, that is, it must gracefully handle duplicate order attempts for the same `cartId`.
+
+== Initialize the Projection
+
+The tagging of the events is already in place from when we created the xref:projection-query.adoc#tagging[query Projection]. So, we just need to initialize it as follows:
+
+. Place the initialization code of the Projection in an `SendOrderProjection` [.group-scala]#object# [.group-java]#class#:
++
+[.tabset]
+Java::
++
+.src/main/java/shopping/cart/SendOrderProjection.java:
+[source,java,indent=0]
+----
+include::example$shopping-cart-service-java/src/main/java/shopping/cart/SendOrderProjection.java[]
+----
+
+Scala::
++
+.src/main/scala/shopping/cart/SendOrderProjection.scala:
+[source,scala,indent=0]
+----
+include::example$shopping-cart-service-scala/src/main/scala/shopping/cart/SendOrderProjection.scala[]
+----
+
+. In `Main`, invoke the `SendOrderProjection.init` and create the gRPC client for the `ShoppingOrderService` like this:
++
+[.tabset]
+Java::
++
+[source,java,indent=0]
+----
+include::example$shopping-cart-service-java/src/main/java/shopping/cart/Main.java[tag=SendOrderProjection]
+----
+
+Scala::
++
+[source,scala,indent=0]
+----
+include::example$shopping-cart-service-scala/src/main/scala/shopping/cart/Main.scala[tag=SendOrderProjection]
+----
++
+The reason for placing the initialization of `orderServiceClient` in a `protected` method is that tests can then replace it with a stub implementation.
+
+. The gRPC client is using service discovery to locate the `ShoppingOrderService`. For local development add the following to `src/main/resources/local-shared.conf`, which is loaded when running locally:
++
+[source,hocon]
+----
+include::example$shopping-cart-service-scala/src/main/resources/local-shared.conf[tag=grpc]
+----
+
+== Run locally
+
+Follow these steps to run locally and exercise the new Projection and service:
+
+. Start Cassandra and Kafka, unless they are already running:
++
+[source,shell script]
+----
+docker-compose up -d
+----
+
+. Run the `shopping-order-service` with:
++
+[.group-java]
+[source,shell script]
+----
+# make sure to compile before running exec:exec
+mvn compile exec:exec -DAPP_CONFIG=local1.conf
+----
++
+[.group-scala]
+[source,shell script]
+----
+sbt -Dconfig.resource=local1.conf run
+----
+
+. Try the new order service directly with `grpcurl`:
++
+[source,shell script]
+----
+grpcurl -d '{"cartId":"cart1", "items":[{"itemId":"socks", "quantity":3}, {"itemId":"t-shirt", "quantity":2}]}' -plaintext 127.0.0.1:8301 shoppingorder.ShoppingOrderService.Order
+----
+
+. Keep the `shopping-order-service` running, and in another terminal run the `shopping-cart-service` with:
++
+[.group-java]
+[source,shell script]
+----
+# make sure to compile before running exec:exec
+mvn compile exec:exec -DAPP_CONFIG=local1.conf
+----
++
+[.group-scala]
+[source,shell script]
+----
+sbt -Dconfig.resource=local1.conf run
+----
+
+. Use the checkout in the shopping cart service with `grpcurl` (note the different port number):
++
+[source,shell script]
+----
+grpcurl -d '{"cartId":"cart1", "itemId":"scissors", "quantity":1}' -plaintext 127.0.0.1:8101 shoppingcart.ShoppingCartService.AddItem
+
+grpcurl -d '{"cartId":"cart1"}' -plaintext 127.0.0.1:8101 shoppingcart.ShoppingCartService.Checkout
+----
+
+. In the terminal of the `shopping-order-service` you should see the log of the order:
++
+----
+Order 12 items from cart cart1
+----
+
+=== Stop the service
+
+When finished: 
+
+. Stop the `shopping-cart-service` and `shopping-order-service` with `ctrl-c`. 
+
+. Stop Cassandra and Kafka with:
++
+[source,shell script]
+----
+docker-compose down
+----
+
+:!sectnums:
+== Learn more
+
+Congratulations, you finished the tutorial! The examples of gRPC, event sourcing, and Projections should be helpful when you create your own Reactive Microservices. The following sections go into more detail:
+
+* xref:concepts:internal-and-external-communication.adoc[Internal and External Communication concepts].
+* {akka-grpc}/client/index.html[Akka gRPC client reference documentation {tab-icon}, window="tab"].
+* {akka-projection}/[Akka Projection reference documentation {tab-icon}, window="tab"].

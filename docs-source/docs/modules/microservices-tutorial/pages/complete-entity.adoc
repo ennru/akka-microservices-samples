@@ -1,0 +1,415 @@
+= V: Complete Event Sourced entity
+:page-supergroup-java-scala: Language
+
+include::ROOT:partial$include.adoc[]
+
+On this page, we will complete the cart entity with more commands and events. This `ShoppingCart` entity will use Event Sourcing to persist events that represent changes to the state of the cart.
+
+.This part of the xref:overview.adoc[full example] will focus on the shopping cart entity.
+[caption=""]
+image::example-entity.png[Example entity]
+
+On this page you will learn how to:
+
+* implement an Event Sourced entity by expanding work from the xref:entity.adoc[previous steps] and adding to the `ShoppingCart`:
+
+** `Checkout` - a command to checkout the shopping cart
+** `CheckedOut` - an event to capture checkouts
+** `Get` - a way get the current state of the shopping cart
+
+At the end, we also provide a list of <<Optional commands and events>> that you can add on your own to test your knowledge.
+
+== Source downloads
+
+If you prefer to simply view and run the example, download a zip file containing the completed code:
+
+[.tabset]
+Java::
++
+****
+* link:_attachments/2-shopping-cart-event-sourced-java.zip[Source] that includes all previous tutorial steps and allows you to start with the steps on this page.
+* link:_attachments/3-shopping-cart-event-sourced-complete-java.zip[Source] with the steps on this page completed.
+****
+
+Scala::
++
+****
+* link:_attachments/2-shopping-cart-event-sourced-scala.zip[Source] that includes all previous tutorial steps and allows you to start with the steps on this page.
+* link:_attachments/3-shopping-cart-event-sourced-complete-scala.zip[Source] with the steps on this page completed.
+****
+
+:sectnums:
+== Add the command and event for checkout
+
+When the cart has been checked out it should not accept any commands that change its state. However, it should still be possible to `Get` the current state of a checked out cart. We suggest you try implementing `Checkout` on your own and then compare it with the solution shown below. Add the `Checkout` command alongside the existing `AddItem` command.
+
+The following sections show our solution.
+
+=== Checkout command
+
+[.tabset]
+Java::
++
+[source,java,indent=0]
+----
+include::example$03-shopping-cart-service-java/src/main/java/shopping/cart/ShoppingCart.java[tag=checkoutCommand]
+----
+
+Scala::
++
+[source,scala,indent=0]
+----
+include::example$03-shopping-cart-service-scala/src/main/scala/shopping/cart/ShoppingCart.scala[tag=checkoutCommand]
+----
+
+=== CheckedOut event
+
+The corresponding `CheckedOut` event:
+
+[.tabset]
+Java::
++
+[source,java,indent=0]
+----
+include::example$03-shopping-cart-service-java/src/main/java/shopping/cart/ShoppingCart.java[tag=checkedOutEvent]
+----
+
+Scala::
++
+[source,scala,indent=0]
+----
+include::example$03-shopping-cart-service-scala/src/main/scala/shopping/cart/ShoppingCart.scala[tag=checkedOutEvent]
+----
+
+=== State changes
+
+The state should include a value for if and when the cart was checked out:
+
+[.tabset]
+Java::
++
+[source,java,indent=0]
+----
+include::example$03-shopping-cart-service-java/src/main/java/shopping/cart/ShoppingCart.java[tag=state-with-checkout]
+----
+
+Scala::
++
+[source,scala,indent=0]
+----
+include::example$03-shopping-cart-service-scala/src/main/scala/shopping/cart/ShoppingCart.scala[tag=state-with-checkout]
+----
+
+=== Unit test
+
+Add a unit test for the new `Checkout` command in [.group-scala]#`ShoppingCartSpec`# [.group-java]#`ShoppingCartTest`#:
+
+[.tabset]
+Java::
++
+[source,java,indent=0]
+----
+include::example$03-shopping-cart-service-java/src/test/java/shopping/cart/ShoppingCartTest.java[tag=checkout]
+----
+
+Scala::
++
+[source,scala,indent=0]
+----
+include::example$03-shopping-cart-service-scala/src/test/scala/shopping/cart/ShoppingCartSpec.scala[tag=checkout]
+----
+You will also have to update the "add item" to use the new `Summary` signature.
+
+Commands should be handled differently when the cart has been checked out. `AddItem` is no longer allowed after checkout. Therefore, we refactor the [.group-scala]#`handleCommand`# [.group-java]#`commandHandler`# method into two separate methods `openShoppingCart` and `checkedOutShoppingCart` that are used depending on the `checkedOut` state. The previous code for `AddItem` goes into the `openShoppingCart` method as well as the new `Checkout` command.
+
+[.tabset]
+Java::
++
+[source,java,indent=0]
+----
+include::example$03-shopping-cart-service-java/src/main/java/shopping/cart/ShoppingCart.java[tag=commandHandlers]
+----
+
+Scala::
++
+[source,scala,indent=0]
+----
+include::example$03-shopping-cart-service-scala/src/main/scala/shopping/cart/ShoppingCart.scala[tag=commandHandlers]
+----
+
+In `checkedOutShoppingCart` the `AddItem` and `Checkout` commands should be rejected:
+
+[.tabset]
+Java::
++
+[source,java,indent=0]
+----
+include::example$03-shopping-cart-service-java/src/main/java/shopping/cart/ShoppingCart.java[tag=checkedOutShoppingCart]
+----
+
+Scala::
++
+[source,scala,indent=0]
+----
+include::example$03-shopping-cart-service-scala/src/main/scala/shopping/cart/ShoppingCart.scala[tag=checkedOutShoppingCart]
+----
+
+=== Event handler
+
+We still need to add the event handler for the `CheckedOut` event  in the `handleEvent` method:
+
+[.tabset]
+Java::
++
+[source,java,indent=0]
+----
+include::example$03-shopping-cart-service-java/src/main/java/shopping/cart/ShoppingCart.java[tag=checkedOutEventHandler]
+----
+
+Scala::
++
+[source,scala,indent=0]
+----
+include::example$03-shopping-cart-service-scala/src/main/scala/shopping/cart/ShoppingCart.scala[tag=checkedOutEventHandler]
+----
+
+=== Run unit tests
+
+That should cover everything for the `Checkout` command. Let's confirm by running the unit tests with:
+
+[.group-scala]
+[source,shell script]
+----
+sbt test
+----
+
+[.group-java]
+[source,shell script]
+----
+mvn test
+----
+
+== Add Get command
+
+Add the `Get` command alongside the existing `AddItem` and `Checkout` commands:
+
+[.tabset]
+Java::
++
+[source,java,indent=0]
+----
+include::example$03-shopping-cart-service-java/src/main/java/shopping/cart/ShoppingCart.java[tag=getCommand]
+----
+
+Scala::
++
+[source,scala,indent=0]
+----
+include::example$03-shopping-cart-service-scala/src/main/scala/shopping/cart/ShoppingCart.scala[tag=getCommand]
+----
+
+Add a unit test for the new `Get` command in `ShoppingCartSpec`:
+
+[.tabset]
+Java::
++
+[source,java,indent=0]
+----
+include::example$03-shopping-cart-service-java/src/test/java/shopping/cart/ShoppingCartTest.java[tag=get]
+----
+
+Scala::
++
+[source,scala,indent=0]
+----
+include::example$03-shopping-cart-service-scala/src/test/scala/shopping/cart/ShoppingCartSpec.scala[tag=get]
+----
+
+The command handler for `Get` is independent of the `checkedOut` state, [.group-scala]#so add it to both `openShoppingCart` and `checkedOutShoppingCart`# [.group-java]#so it can be added to the command handler builder using `forAnyState()`#:
+
+[.tabset]
+Java::
++
+[source,java,indent=0]
+----
+include::example$03-shopping-cart-service-java/src/main/java/shopping/cart/ShoppingCart.java[tag=getCommandHandler]
+----
+
+Scala::
++
+[source,scala,indent=0]
+----
+include::example$03-shopping-cart-service-scala/src/main/scala/shopping/cart/ShoppingCart.scala[tag=getCommandHandler]
+----
+
+Try the new `Get` command  by running the unit tests with:
+
+
+[.group-scala]
+[source,shell script]
+----
+sbt test
+----
+
+[.group-java]
+[source,shell script]
+----
+mvn test
+----
+
+== Add new operations to the service descriptor
+
+
+Let's add corresponding operation definitions in `ShoppingCartService.proto`:
+
+[source,protobuf]
+----
+include::example$03-shopping-cart-service-scala/src/main/protobuf/ShoppingCartService.proto[tag=CheckoutAndGet]
+----
+
+<1> Defines the `Checkout` operation.
+<2> Defines the `GetCart` operation.
+<3> For simplicity, most requests share a common response, for easier evolution of an interface, separate responses are often a better choice.
+<4> Note the new `checkedOut` flag.
+
+
+
+Generate code by compiling the project:
+
+
+[.group-scala]
+[source,shell script]
+----
+sbt compile
+----
+
+[.group-java]
+[source,shell script]
+----
+mvn compile
+----
+
+You will see a compilation error in [.group-scala]#`ShoppingCartServiceImpl.scala`# [.group-java]#`ShoppingCartServiceImpl.java`#, but that is expected with the changed Protobuf definition. We will fix that now.
+
+Add implementations of the new operations in `ShoppingCartServiceImpl` in the same way as `addItem`:
+
+[.tabset]
+Java::
++
+[source,java,indent=0]
+----
+include::example$03-shopping-cart-service-java/src/main/java/shopping/cart/ShoppingCartServiceImpl.java[tag=checkoutAndGet]
+----
+
+Scala::
++
+[source,scala,indent=0]
+----
+include::example$03-shopping-cart-service-scala/src/main/scala/shopping/cart/ShoppingCartServiceImpl.scala[tag=checkoutAndGet]
+----
+
+We also have to include the new `checkedOut` flag when converting from `ShoppingCart.Summary` to `proto.Cart`.
+
+[.tabset]
+Java::
++
+[source,java,indent=0]
+----
+include::example$03-shopping-cart-service-java/src/main/java/shopping/cart/ShoppingCartServiceImpl.java[tag=toProtoCart]
+----
+
+Scala::
++
+[source,scala,indent=0]
+----
+include::example$03-shopping-cart-service-scala/src/main/scala/shopping/cart/ShoppingCartServiceImpl.scala[tag=toProtoCart]
+----
+
+
+
+== Run locally
+
+Start Cassandra, unless it's already running:
+
+[source,shell script]
+----
+docker-compose up -d
+----
+
+Run the service with:
+
+[.group-scala]
+[source,shell script]
+----
+sbt -Dconfig.resource=local1.conf run
+----
+
+[.group-java]
+[source,shell script]
+----
+# make sure to compile before running exec:exec
+mvn compile exec:exec -DAPP_CONFIG=local1.conf
+----
+
+=== Exercise the service
+
+Try it with `grpcurl`.
+
+Add an item to the cart:
+[source,shell script]
+----
+grpcurl -d '{"cartId":"cart2", "itemId":"socks", "quantity":3}' -plaintext 127.0.0.1:8101 shoppingcart.ShoppingCartService.AddItem
+----
+
+Check the quantity of the cart:
+[source,shell script]
+----
+grpcurl -d '{"cartId":"cart2"}' -plaintext 127.0.0.1:8101 shoppingcart.ShoppingCartService.GetCart
+----
+
+
+Check out cart:
+[source,shell script]
+----
+grpcurl -d '{"cartId":"cart2"}' -plaintext 127.0.0.1:8101 shoppingcart.ShoppingCartService.Checkout
+----
+
+=== Stop the service
+
+When finished, stop the service with `ctrl-c`. Leave Cassandra running for the next set of steps, or stop it with:
+
+[source,shell script]
+----
+docker-compose down
+----
+
+:!sectnums:
+== Optional commands and events
+
+The commands and events listed in this section are not mandatory for subsequent steps of the tutorial and their details won't be covered on this page. You can implement the commands, events, and `State` management following the pattern we used for the `AddItem` command and `ItemAdded` event in the xref:entity.adoc[previous step]. This is a good exercise to help solidify your knowledge of how to implement `EventSourcedBehavior`. Optional commands and corresponding events that you can add on your own:
+
+* `RemoveItem` - remove an item from the cart
+* `AdjustItemQuantity` - adjust the quantity of an item in the cart
+* `ItemRemoved`
+* `ItemQuantityAdjusted`
+
+After adding the optional commands, you can build and run again and try them out:
+
+Update the quantity of an item:
+[source,shell script]
+----
+grpcurl -d '{"cartId":"cart2", "itemId":"socks", "quantity":5}' -plaintext 127.0.0.1:8101 shoppingcart.ShoppingCartService.UpdateItem
+----
+
+Get the cart state again:
+[source,shell script]
+----
+grpcurl -d '{"cartId":"cart2"}' -plaintext 127.0.0.1:8101 shoppingcart.ShoppingCartService.GetCart
+----
+
+
+== Learn more
+
+* xref:concepts:event-sourcing.adoc[Event Sourcing concepts].
+* {akka}/typed/persistence.html[Akka Event Sourcing reference documentation {tab-icon}, window="tab"].
+* {akka}/typed/cluster-sharding.html[Akka Cluster Sharding reference documentation {tab-icon}, window="tab"].
